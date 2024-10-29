@@ -26,9 +26,25 @@ class RegistroResource extends Resource
                 Forms\Components\Wizard::make([
                     Forms\Components\Wizard\Step::make('Datos Iniciales')
                         ->schema([
-                            Forms\Components\TextInput::make('distrito_municipal')
+                            Forms\Components\Select::make('distrito_municipal')
                                 ->label('DISTRITO MUNICIPAL')
-                                ->required(),
+                                ->required()
+                                ->options([
+                                    '1' => 'Distrito1',
+                                    '2' => 'Distrito2',
+                                    '3' => 'Distrito3',
+                                    '4' => 'Distrito4',
+                                    '5' => 'Distrito5',
+                                    '6' => 'Distrito6',
+                                    '7' => 'Distrito7',
+                                    '8' => 'Distrito8',
+                                    '9' => 'Distrito9',
+                                    '10' => 'Distrito10',
+                                    '11' => 'Distrito11',
+                                    '12' => 'Distrito12',
+                                    '13' => 'Distrito13',
+                                    '14' => 'Distrito14',
+                                ]),
                             Forms\Components\TextInput::make('ubicacion_denominacion_anterior')
                                 ->label('UBICACIÓN DENOMINACIÓN ANTERIOR')
                                 ->required(),
@@ -41,12 +57,21 @@ class RegistroResource extends Resource
                         ]),
                     Forms\Components\Wizard\Step::make('Folio Real')
                         ->schema([
-                            Forms\Components\TextInput::make('matricula')
-                                ->label('MATRICULA')
-                                ->required(),
-                            Forms\Components\TextInput::make('partida')
-                                ->label('PARTIDA')
-                                ->required(),
+                            Forms\Components\Radio::make('tipo')
+                                ->label('Seleccione un tipo')
+                                ->options([
+                                    'matricula' => 'MATRICULA',
+                                    'partida' => 'PARTIDA',
+                                ])
+                                ->required()
+                                ->reactive()
+                                ->afterStateUpdated(function (callable $set, $state) {
+                                    // Establecer valores de matricula y partida según la selección
+                                    $set('matricula', $state === 'matricula' ? 1 : 0);
+                                    $set('partida', $state === 'partida' ? 1 : 0);
+                                }),
+                            Forms\Components\Hidden::make('matricula')->default(0),
+                            Forms\Components\Hidden::make('partida')->default(0),
                             Forms\Components\TextInput::make('nro')
                                 ->label('NRO.')
                                 ->required(),
@@ -55,7 +80,7 @@ class RegistroResource extends Resource
                         ->schema([
                             Forms\Components\Checkbox::make('reposicion')
                                 ->label('REPOSICION'),
-                            Forms\Components\DatePicker::make('actualizacion')
+                            Forms\Components\Checkbox::make('actualizacion')
                                 ->label('ACTUALIZACIÓN'),
                             Forms\Components\Checkbox::make('cambio_a_matricula')
                                 ->label('CAMBIO A MATRICULA'),
@@ -66,6 +91,7 @@ class RegistroResource extends Resource
                             Forms\Components\Checkbox::make('solicitud_de_transferencia')
                                 ->label('SOLICITUD DE TRANSFERENCIA'),
                         ]),
+
                     Forms\Components\Wizard\Step::make('Escritura Publica')
                         ->schema([
                             Forms\Components\TextInput::make('nro_testimonio')
@@ -74,17 +100,24 @@ class RegistroResource extends Resource
                                 ->label('Nº NOTARIA'),
                             Forms\Components\TextInput::make('notario')
                                 ->label('NOTARIO'),
-                            Forms\Components\TextInput::make('distrito_judicial')
-                                ->label('DISTRITO JUDICIAL DE:'),
+                            Forms\Components\Select::make('distrito_judicial')
+                                ->label('DISTRITO JUDICIAL DE:')
+                                ->options([
+                                    'la_paz' => 'La Paz - Bolivia',
+                                    'el_alto' => 'El Alto - Bolivia',
+                                ])
+                                ->required(),
                             Forms\Components\TextInput::make('testimonio_de')
                                 ->label('TESTIMONIO DE:'),
                         ]),
+
                     Forms\Components\Wizard\Step::make('Estado Actual del Testimonio')
                         ->schema([
                             Forms\Components\Checkbox::make('reposicion')->label('REPOSICIÓN'),
                             Forms\Components\Checkbox::make('2do_traslado')->label('2DO TRASLADO'),
-                            Forms\Components\Checkbox::make('otro')->label('OTRO'),
+                            Forms\Components\TextInput::make('otro')->label('OTRO'),
                         ]),
+
                     Forms\Components\Wizard\Step::make('Superficie Total y Superficie Restante')
                         ->schema([
                             Forms\Components\TextInput::make('superficie_total')
@@ -92,13 +125,18 @@ class RegistroResource extends Resource
                             Forms\Components\TextInput::make('superficie_restante')
                                 ->label('SUPERFICIE RESTANTE'),
                         ]),
+
                     Forms\Components\Wizard\Step::make('Registro Notarial')
                         ->schema([
-                            Forms\Components\TextInput::make('notaria_de_fe_publica')
-                                ->label('NOTARIA DE FE PUBLICA'),
-                            Forms\Components\TextInput::make('notaria_de_gobierno')
-                                ->label('NOTARIA DE GOBIERNO'),
+                            Forms\Components\Radio::make('registro_notarial')
+                                ->label('Selecciona el tipo de Notaría')
+                                ->options([
+                                    'notaria_de_fe_publica' => 'NOTARÍA DE FE PÚBLICA',
+                                    'notaria_de_gobierno' => 'NOTARÍA DE GOBIERNO',
+                                ])
+                                ->required(),
                         ]),
+
                     Forms\Components\Wizard\Step::make('Registrado por:')
                         ->schema([
                             Forms\Components\TextInput::make('ley_municipal')->label('LEY MUNICIPAL'),
@@ -114,21 +152,33 @@ class RegistroResource extends Resource
                         ]),
                     Forms\Components\Wizard\Step::make('Registro')
                         ->schema([
-                            Forms\Components\Checkbox::make('global')->label('GLOBAL'),
-                            Forms\Components\Checkbox::make('individual')->label('INDIVIDUAL'),
+                            Forms\Components\Radio::make('tipo_registro')
+                                ->label('Selecciona el tipo de registro')
+                                ->options([
+                                    'global' => 'GLOBAL',
+                                    'individual' => 'INDIVIDUAL',
+                                ])
+                                ->required(),
                         ]),
-                    Forms\Components\Wizard\Step::make('Gravamen')
+
+                        Forms\Components\Wizard\Step::make('Gravamen')
                         ->schema([
-                            Forms\Components\Checkbox::make('si')->label('SI'),
-                            Forms\Components\Checkbox::make('no')->label('NO'),
+                            Forms\Components\Radio::make('gravamen')
+                                ->label('¿Gravamen?')
+                                ->options([
+                                    'si' => 'SI',
+                                    'no' => 'NO',
+                                ])
+                                ->required(),
                         ]),
+                    
                     Forms\Components\Wizard\Step::make('Otras Descripciones')
                         ->schema([
                             Forms\Components\Textarea::make('otras_descripciones')
                                 ->label('OTRAS DESCRIPCIONES'),
                         ]),
-                ])->label('Registro de Registros'),
-                    ]);
+                ])->columnSpanFull()
+            ]);
     }
 
     public static function table(Table $table): Table
