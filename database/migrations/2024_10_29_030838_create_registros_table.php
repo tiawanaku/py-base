@@ -30,8 +30,9 @@ return new class extends Migration
             $table->string('testimonio_de')->nullable();
             $table->boolean('2do_traslado')->default(false);
             $table->boolean('otro')->default(false);
-            $table->decimal('superficie_total', 10, 2)->nullable();
-            $table->decimal('superficie_restante', 10, 2)->nullable();
+            // Cambiar 'superficie_total' a tipo string
+            $table->string('superficie_total')->nullable();
+            $table->string('superficie_restante')->nullable();
             $table->string('notaria_de_fe_publica')->nullable();
             $table->string('notaria_de_gobierno')->nullable();
             $table->string('ley_municipal')->nullable();
