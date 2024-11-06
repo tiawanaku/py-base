@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Tables\Actions\Action;
 
 class RegistroResource extends Resource
 {
@@ -76,7 +77,8 @@ class RegistroResource extends Resource
                                 ->label('NRO.')
                                 ->required(),
                         ]),
-                    Forms\Components\Wizard\Step::make('Estado Actual del Folio Real o Partida')
+
+                        Forms\Components\Wizard\Step::make('Estado Actual del Folio Real o Partida')
                         ->schema([
                             Forms\Components\Checkbox::make('reposicion')
                                 ->label('REPOSICION'),
@@ -171,27 +173,129 @@ class RegistroResource extends Resource
                                 ])
                                 ->required(),
                         ]),
-                    
+
                     Forms\Components\Wizard\Step::make('Otras Descripciones')
                         ->schema([
                             Forms\Components\Textarea::make('otras_descripciones')
                                 ->label('OTRAS DESCRIPCIONES'),
                         ]),
+
+                    // Paso adicional: Área en Mapa
+                    Forms\Components\Wizard\Step::make('Área en Mapa')
+                    ->schema([
+                        \Dotswan\MapPicker\Fields\Map::make('location')
+                            ->label('Ubicación')
+                            ->columnSpanFull()
+                            ->defaultLocation(latitude: 40.4168, longitude: -3.7038) // Ubicación por defecto
+                            ->afterStateUpdated(function (callable $set, ?array $state): void {
+                                $set('latitude', $state['lat']);
+                                $set('longitude', $state['lng']);
+                                // Aseguramos que el GeoJSON de las figuras se guarda correctamente.
+                                $set('geojson', json_encode($state['geojson'] ?? [])); // Si no hay GeoJSON, guarda un array vacío
+                            })
+                            ->afterStateHydrated(function ($state, $record, $set) {
+                                if ($record) {
+                                    // Si el registro tiene coordenadas y GeoJSON, se pasa correctamente
+                                    $set('location', [
+                                        'lat' => $record->latitude ?? null,
+                                        'lng' => $record->longitude ?? null,
+                                        // Asegúrate de que no hay HTML ni etiquetas en la descripción.
+                                        'geojson' => json_decode(strip_tags($record->description) ?? '[]')
+                                    ]);
+                                } else {
+                                    // Si no hay registro, configuramos valores predeterminados.
+                                    $set('location', [
+                                        'lat' => null,
+                                        'lng' => null,
+                                        'geojson' => null
+                                    ]);
+                                }
+                            })
+                            ->liveLocation(true, true, 5000)
+                            ->showMarker()
+                            ->draggable()
+                            ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png")
+                            ->zoom(15)
+                            ->detectRetina()
+                            ->showMyLocationButton()
+                            ->geoMan(true)
+                            ->geoManEditable(true)
+                            ->geoManPosition('topleft')
+                            ->drawPolygon() // Habilita el dibujo de polígonos
+                            ->drawCircle()
+                            ->editPolygon()
+                            ->deleteLayer()
+                            ->setColor('#3388ff')
+                            ->setFilledColor('#cad9ec')
+                    ]),
                 ])->columnSpanFull()
             ]);
     }
+
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                //
+                // Columnas de la segunda definición
+                Tables\Columns\TextColumn::make('distrito_municipal')
+                    ->label('Distrito Municipal')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('ubicacion_denominacion_anterior')
+                    ->label('Ubicación Denominación Anterior')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('actual_denominacion')
+                    ->label('Actual Denominación')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('codigo_catastral')
+                    ->label('Código Catastral')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('tipo')
+                    ->label('Tipo de Folio Real')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('nro')
+                    ->label('Número del Folio Real')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('otras_descripciones')
+                    ->label('Otras Descripciones')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('latitude')
+                    ->label('Latitud')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('longitude')
+                    ->label('Longitud')
+                    ->sortable(),
+
+                // Columnas de la primera definición
+                Tables\Columns\TextColumn::make('geojson')
+                    ->label('Área en Mapa')
+                    ->formatStateUsing(function ($state) {
+                        if ($state) {
+                            $geojson = json_decode($state, true);
+                            return '<a href="#" onclick="openMapModal(' . json_encode($geojson) . ')">Ver Polígono</a>';
+                        }
+                        return 'No disponible';
+                    })
+                    ->html(), // Esto permite que el HTML sea interpretado y renderizado correctamente
             ])
             ->filters([
-                //
+                // Filtros si es necesario...
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Action::make('ver_mapa')
+                    ->label('Ver Mapa')
+                    ->icon('heroicon-o-map')
+                    ->color('primary')
+                    ->modalHeading('Ver Mapa')
+                    ->modalContent(function ($record) {
+                        $geojson = json_decode($record->geojson, true);
+                        return view('modal-mapa', compact('geojson'));
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -199,6 +303,7 @@ class RegistroResource extends Resource
                 ]),
             ]);
     }
+
 
     public static function getRelations(): array
     {
